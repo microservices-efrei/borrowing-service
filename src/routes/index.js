@@ -1,7 +1,7 @@
-const express = require("express");
+const express = require('express');
 const app = express();
-const borrowingRoutes = require("./src/routes/borrowingRoutes");
+const borrowingRoutes = require('./borrowingRoutes');
 
-app.use("/borrowing", borrowingRoutes);
+app.use('/borrowing', borrowingRoutes);
 
 module.exports = app;

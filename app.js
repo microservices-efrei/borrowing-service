@@ -1,22 +1,22 @@
-const express = require("express");
-const sequelize = require("./src/config/database");
-const dotenv = require("dotenv");
-const indexRoutes = require("./src/routes/index");
-const borrowingController = require("./src/controllers/borrowingController");
+const express = require('express');
+const sequelize = require('./src/config/database');
+const dotenv = require('dotenv');
+const indexRoutes = require('./src/routes/index');
+const rabbitMQService = require('./src/services/rabbitmqService');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 
 // Initialisation de la base de données
 sequelize
   .authenticate()
   .then(() => {
-    console.log("Connexion à la base de données réussie");
+    console.log('Connexion à la base de données réussie');
   })
   .catch((error) => {
-    console.error("Impossible de se connecter à la base de données :", error);
+    console.error('Impossible de se connecter à la base de données :', error);
     process.exit(1);
   });
 
@@ -24,9 +24,9 @@ sequelize
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use("/api", indexRoutes);
+app.use('/api', indexRoutes);
 
-borrowingController.startListening();
+rabbitMQService.startListening();
 app.listen(PORT, () => {
   console.log(`Borrowing Service running on port ${PORT}`);
 });
