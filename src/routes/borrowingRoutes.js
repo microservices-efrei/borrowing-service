@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const borrowingController = require('../controllers/borrowingController');
-const { verifyToken } = require('../middlewares/authMiddleware');
+const { createBorrowing } = require('../controllers/borrowingController');
 
 // Route pour emprunter un livre
-router.post('/borrow', verifyToken, borrowingController.createBorrowing);
+router.post('/borrow', createBorrowing);
 
 module.exports = router;
