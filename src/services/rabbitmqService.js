@@ -56,7 +56,7 @@ async function consumeMessagesFromQueue() {
   try {
     await connectRabbitMQ();
 
-    const queue = 'user_response_queue';
+    const queue = 'borrowing_queue';
     await channel.assertQueue(queue, { durable: true });
 
     console.log('En attente de messages dans la queue', queue);
