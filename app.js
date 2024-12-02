@@ -2,6 +2,7 @@ const express = require("express");
 const sequelize = require("./src/config/database");
 const dotenv = require("dotenv");
 const indexRoutes = require("./src/routes/index");
+const borrowingController = require("./src/controllers/borrowingController");
 
 dotenv.config();
 
@@ -21,10 +22,11 @@ sequelize
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.json());
+
 app.use("/api", indexRoutes);
 
+borrowingController.startListening();
 app.listen(PORT, () => {
   console.log(`Borrowing Service running on port ${PORT}`);
 });
