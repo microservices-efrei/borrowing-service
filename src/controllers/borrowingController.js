@@ -1,11 +1,10 @@
 const Borrowing = require('../models/borrowing'); // Modèle Borrowing pour enregistrer les emprunts
 
-// URL des services externes
-
 // Fonction pour créer l'emprunt
 async function createBorrowing(userId, bookId) {
   try {
     // Création de l'emprunt dans la base de données
+
     const borrowing = await Borrowing.create({
       userId,
       bookId,
@@ -22,7 +21,7 @@ async function createBorrowing(userId, bookId) {
 }
 
 // Exporter les fonctions du contrôleur
-async function updateBorrowing(bookId, returnedAt) {
+async function updateBorrowing(bookId, returnedAt = null) {
   try {
     // Recherche de l'emprunt par son ID
 
@@ -39,6 +38,17 @@ async function updateBorrowing(bookId, returnedAt) {
 
     // Mise à jour de la date de retour
     borrowing.returnedAt = returnedAt;
+    borrowing.borrowedAt = null;
+    borrowing.updatedAt = new Date();
+
+    if (borrowing.returnedAt === null) {
+      borrowing.returnedAt = null;
+      borrowing.borrowedAt = new Date();
+      borrowing.updatedAt = new Date();
+      await borrowing.save();
+      console.log('Le livre est à nouveau disponible :', borrowing);
+      return borrowing;
+    }
 
     // Sauvegarder les modifications
     await borrowing.save();

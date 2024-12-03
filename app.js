@@ -2,7 +2,7 @@ const express = require('express');
 const sequelize = require('./src/config/database');
 const dotenv = require('dotenv');
 const indexRoutes = require('./src/routes/index');
-const rabbitMQService = require('./src/services/rabbitmqService');
+const { startListening } = require('./src/services/listeningService');
 const cors = require('cors');
 
 dotenv.config();
@@ -27,7 +27,9 @@ app.use(express.json());
 
 app.use('/api', indexRoutes);
 app.use(cors());
-rabbitMQService.startListening();
+
+startListening();
+
 app.listen(PORT, () => {
   console.log(`Borrowing Service running on port ${PORT}`);
 });

@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 services:
   # Service Node.js
@@ -8,14 +8,14 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3002:3002"
+      - '3002:3002'
     environment:
-      - NODE_ENV=development
-      - DB_HOST=database-postgres # Nom du service PostgreSQL dans le compose central
-      - DB_USER=root
-      - DB_PASSWORD=password
-      - DB_NAME=borrowing_db
-      - JWT_SECRET="syDqft24Tcc35Y1gepDphX69HwdJicfYQzVzvE3Oi2aYicLDmQE5XGvIqTD57Pac"
+      - NODE_ENV=${NODE_ENV}
+      - DB_HOST=${DB_HOST} # Nom du service PostgreSQL dans le compose central
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
     volumes:
       - ./src:/usr/src/app/src
     command: >

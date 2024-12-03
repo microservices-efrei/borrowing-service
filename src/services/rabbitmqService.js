@@ -1,9 +1,6 @@
 const amqp = require('amqplib');
-const {
-  createBorrowing,
-  updateBorrowing,
-} = require('../controllers/borrowingController');
-const { checkJwtTokenFromRabbitMQ } = require('../middleware/jwt');
+
+
 const RABBITMQ_URI = 'amqp://micro-service:password@rabbitmq';
 
 let connection;
@@ -12,10 +9,16 @@ let channel;
 // Connexion RabbitMQ globale
 async function connectRabbitMQ() {
   if (!connection) {
-    connection = await amqp.connect(RABBITMQ_URI);
-    channel = await connection.createChannel();
-    console.log('Connexion à RabbitMQ établie');
+    try {
+      connection = await amqp.connect(RABBITMQ_URI);
+      channel = await connection.createChannel();
+      console.log('Connexion à RabbitMQ établie');
+    } catch (error) {
+      console.error('Erreur lors de la connexion à RabbitMQ:', error);
+      throw error; // Propager l'erreur si la connexion échoue
+    }
   }
+  return channel; // Retourner le canal pour l'utiliser dans d'autres fichiers
 }
 
 // Fonction pour envoyer un message à RabbitMQ
@@ -60,111 +63,9 @@ async function handleUserVerification(userId) {
   }
 }
 
-// Fonction pour consommer les messages RabbitMQ et traiter les emprunts
-// Fonction pour consommer les messages RabbitMQ et traiter les emprunts
-async function consumeMessagesFromBorrowingQueue() {
-  try {
-    await connectRabbitMQ();
-    const queue = 'borrowing_queue';
-    await channel.assertQueue(queue, { durable: true });
-
-    console.log('En attente de messages dans la queue', queue);
-
-    channel.consume(queue, async (msg) => {
-      if (msg !== null) {
-        const { userId, bookId, token } = JSON.parse(msg.content.toString());
-        console.log("Traitement de l'emprunt pour l'utilisateur", userId);
-
-        // Vérifier le JWT
-        try {
-          const decoded = await checkJwtTokenFromRabbitMQ(token); // Vérifier et décoder le token
-          console.log('Utilisateur vérifié:', decoded);
-
-          // Vérification de l'utilisateur
-          if (decoded.id !== userId) {
-            console.log("Erreur: L'ID utilisateur du token ne correspond pas.");
-            channel.ack(msg); // Acquitter le message, même si l'emprunt n'a pas été effectué
-            return;
-          }
-
-          // L'utilisateur est authentifié, poursuivre le traitement
-          const isUserVerified = await handleUserVerification(userId);
-          if (!isUserVerified) {
-            console.log(
-              `L'utilisateur ${userId} ne peut pas effectuer l'emprunt.`
-            );
-            channel.ack(msg); // Acquitter le message, même si l'emprunt n'a pas été effectué
-            return;
-          }
-
-          // Si l'utilisateur est authentifié et le livre est disponible, on crée l'emprunt
-          const borrowing = await createBorrowing(userId, bookId, token);
-          if (borrowing) {
-            console.log('Emprunt créé avec succès:', borrowing);
-          } else {
-            console.error("Erreur lors de la création de l'emprunt.");
-          }
-
-          // Acquitter le message après traitement
-          channel.ack(msg);
-        } catch (error) {
-          console.error('Erreur lors de la vérification du JWT:', error);
-          channel.ack(msg); // Acquitter le message si le JWT est invalide
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la consommation des messages:', error);
-  }
-}
-
-async function consumeMessagesFromReturnQueue() {
-  try {
-    await connectRabbitMQ();
-    const queue = 'returning_queue';
-    await channel.assertQueue(queue, { durable: true });
-
-    console.log('En attente de messages dans la queue', queue);
-    channel.consume(queue, async (msg) => {
-      if (msg !== null) {
-        const { userId, bookId, returnedAt } = JSON.parse(
-          msg.content.toString()
-        );
-        console.log("Traitement du retour du livre pour l'utilisateur", userId);
-        const isUserVerified = await handleUserVerification(userId);
-        if (!isUserVerified) {
-          console.log(
-            `L'utilisateur ${userId} ne peut pas effectuer le retour.`
-          );
-          channel.ack(msg); // Acquitter le message, même si l'emprunt n'a pas été effectué
-          return;
-        }
-
-        const borrowing = await updateBorrowing(bookId, returnedAt);
-        if (borrowing) {
-          console.log('Retour effectué avec succès:', borrowing);
-        } else {
-          console.error('Erreur lors du retour du livre.');
-        }
-      }
-
-      // Acquitter le message après traitement
-      channel.ack(msg);
-    });
-  } catch (error) {
-    console.error('Erreur lors de la consommation des messages:', error);
-  }
-}
-
-// Démarrer l'écoute des messages RabbitMQ
-async function startListening() {
-  await consumeMessagesFromBorrowingQueue();
-  await consumeMessagesFromReturnQueue();
-}
-
 module.exports = {
   sendMessage,
-  consumeMessagesFromBorrowingQueue,
-  consumeMessagesFromReturnQueue,
-  startListening,
+  connectRabbitMQ,
+  handleUserVerification,
+  channel,
 };

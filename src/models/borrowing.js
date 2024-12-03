@@ -21,7 +21,7 @@ const Borrowing = sequelize.define(
     },
     borrowedAt: {
       type: DataTypes.DATE,
-      allowNull: false,
+      allowNull: true,
       defaultValue: DataTypes.NOW,
       comment: "Date de début de l'emprunt",
     },
