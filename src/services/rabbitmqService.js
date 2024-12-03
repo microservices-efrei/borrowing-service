@@ -1,6 +1,8 @@
 const amqp = require('amqplib');
-const { createBorrowing } = require('../controllers/borrowingController');
-// const axios = require('axios');
+const {
+  createBorrowing,
+  updateBorrowing,
+} = require('../controllers/borrowingController');
 const { checkJwtTokenFromRabbitMQ } = require('../middleware/jwt');
 const RABBITMQ_URI = 'amqp://micro-service:password@rabbitmq';
 
@@ -30,31 +32,8 @@ async function sendMessage(queue, message) {
   }
 }
 
-// Fonction pour vérifier la disponibilité du livre en interrogeant le service Book
-// async function checkBookAvailability(bookId, token) {
-//   try {
-//     const response = await axios.get(
-//       `http://book-service:3003/api/books/${bookId}`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       }
-//     );
-
-//     return response.data.isAvailable; // Suppose que book-service renvoie un champ 'isAvailable'
-//   } catch (error) {
-//     console.error(
-//       'Erreur lors de la vérification de la disponibilité du livre:',
-//       error
-//     );
-//     return false;
-//   }
-// }
-
 // Fonction pour vérifier si l'utilisateur est authentifié
 async function checkUserAuthentication(userId) {
-  // Tu peux interroger la base de données ou un service externe pour vérifier l'authentification
   if (userId) {
     return true; // Retourne true si l'utilisateur est authentifié
   }
@@ -83,7 +62,7 @@ async function handleUserVerification(userId) {
 
 // Fonction pour consommer les messages RabbitMQ et traiter les emprunts
 // Fonction pour consommer les messages RabbitMQ et traiter les emprunts
-async function consumeMessagesFromQueue() {
+async function consumeMessagesFromBorrowingQueue() {
   try {
     await connectRabbitMQ();
     const queue = 'borrowing_queue';
@@ -118,14 +97,6 @@ async function consumeMessagesFromQueue() {
             return;
           }
 
-          // Vérification de la disponibilité du livre
-          //   const isAvailable = await checkBookAvailability(bookId, token);
-          //   if (!isAvailable) {
-          //     console.log('Le livre est déjà réservé ou non disponible');
-          //     channel.ack(msg);
-          //     return;
-          //   }
-
           // Si l'utilisateur est authentifié et le livre est disponible, on crée l'emprunt
           const borrowing = await createBorrowing(userId, bookId, token);
           if (borrowing) {
@@ -147,13 +118,53 @@ async function consumeMessagesFromQueue() {
   }
 }
 
+async function consumeMessagesFromReturnQueue() {
+  try {
+    await connectRabbitMQ();
+    const queue = 'returning_queue';
+    await channel.assertQueue(queue, { durable: true });
+
+    console.log('En attente de messages dans la queue', queue);
+    channel.consume(queue, async (msg) => {
+      if (msg !== null) {
+        const { userId, bookId, returnedAt } = JSON.parse(
+          msg.content.toString()
+        );
+        console.log("Traitement du retour du livre pour l'utilisateur", userId);
+        const isUserVerified = await handleUserVerification(userId);
+        if (!isUserVerified) {
+          console.log(
+            `L'utilisateur ${userId} ne peut pas effectuer le retour.`
+          );
+          channel.ack(msg); // Acquitter le message, même si l'emprunt n'a pas été effectué
+          return;
+        }
+
+        const borrowing = await updateBorrowing(bookId, returnedAt);
+        if (borrowing) {
+          console.log('Retour effectué avec succès:', borrowing);
+        } else {
+          console.error('Erreur lors du retour du livre.');
+        }
+      }
+
+      // Acquitter le message après traitement
+      channel.ack(msg);
+    });
+  } catch (error) {
+    console.error('Erreur lors de la consommation des messages:', error);
+  }
+}
+
 // Démarrer l'écoute des messages RabbitMQ
 async function startListening() {
-  await consumeMessagesFromQueue();
+  await consumeMessagesFromBorrowingQueue();
+  await consumeMessagesFromReturnQueue();
 }
 
 module.exports = {
   sendMessage,
-  consumeMessagesFromQueue,
+  consumeMessagesFromBorrowingQueue,
+  consumeMessagesFromReturnQueue,
   startListening,
 };
