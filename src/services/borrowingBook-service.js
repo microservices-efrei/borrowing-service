@@ -21,7 +21,9 @@ async function consumeMessagesFromBorrowingQueue() {
     channel.consume(queue, async (msg) => {
       console.log('Message reçu:', msg.content.toString());
       if (msg !== null) {
-        const { userId, bookId, token } = JSON.parse(msg.content.toString());
+        const { userId, bookId, token, isAvailable } = JSON.parse(
+          msg.content.toString()
+        );
         console.log("Traitement de l'emprunt pour l'utilisateur", userId);
 
         // Vérifier le JWT
@@ -47,7 +49,7 @@ async function consumeMessagesFromBorrowingQueue() {
 
           if (isBorrowingExists) {
             console.log("Ce livre existe déjà, on va l'update");
-            const borrowing = await updateBorrowing(bookId);
+            const borrowing = await updateBorrowing(bookId, isAvailable);
             if (borrowing) {
               console.log('Emprunt mis à jour avec succès:', borrowing);
             } else {

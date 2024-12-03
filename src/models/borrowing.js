@@ -30,6 +30,12 @@ const Borrowing = sequelize.define(
       allowNull: true,
       comment: 'Date de retour du livre (null si non retourné)',
     },
+    isAvailable: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Disponibilité du livre',
+    },
   },
   {
     tableName: 'borrowings',

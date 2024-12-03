@@ -8,6 +8,7 @@ async function createBorrowing(userId, bookId) {
     const borrowing = await Borrowing.create({
       userId,
       bookId,
+      isAvailable: false,
     });
 
     console.log('Emprunt créé avec succès:', borrowing);
@@ -20,15 +21,25 @@ async function createBorrowing(userId, bookId) {
   }
 }
 
-// Exporter les fonctions du contrôleur
-async function updateBorrowing(bookId, returnedAt = null) {
+// Exporter la fonction de création de l'emprunt
+async function getBorrowing(req, res) {
+  try {
+    const borrowings = await Borrowing.findAll();
+    res.status(200).json({ status: 200, borrowing: borrowings });
+  } catch (error) {
+    console.error(
+      'Erreur lors de la récupération des emprunts:',
+      error.message
+    );
+    res.status(500).json({ error: 'Impossible de récupérer les emprunts.' });
+  }
+}
+
+async function updateBorrowing(bookId, isAvailable, returnedAt = null) {
   try {
     // Recherche de l'emprunt par son ID
-
     const borrowing = await Borrowing.findOne({
-      where: {
-        bookId: bookId,
-      },
+      where: { bookId },
     });
 
     if (!borrowing) {
@@ -36,19 +47,17 @@ async function updateBorrowing(bookId, returnedAt = null) {
       return null;
     }
 
-    // Mise à jour de la date de retour
-    borrowing.returnedAt = returnedAt;
-    borrowing.borrowedAt = null;
-    borrowing.updatedAt = new Date();
-
-    if (borrowing.returnedAt === null) {
-      borrowing.returnedAt = null;
+    // Mise à jour des champs en fonction de la disponibilité
+    if (isAvailable) {
+      borrowing.returnedAt = returnedAt || new Date(); // Si returnedAt n'est pas fourni, on utilise la date actuelle
+      borrowing.borrowedAt = null;
+    } else {
       borrowing.borrowedAt = new Date();
-      borrowing.updatedAt = new Date();
-      await borrowing.save();
-      console.log('Le livre est à nouveau disponible :', borrowing);
-      return borrowing;
+      borrowing.returnedAt = null;
     }
+
+    borrowing.isAvailable = isAvailable;
+    borrowing.updatedAt = new Date();
 
     // Sauvegarder les modifications
     await borrowing.save();
@@ -63,4 +72,4 @@ async function updateBorrowing(bookId, returnedAt = null) {
   }
 }
 
-module.exports = { createBorrowing, updateBorrowing };
+module.exports = { createBorrowing, updateBorrowing, getBorrowing };

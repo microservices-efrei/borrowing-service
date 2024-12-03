@@ -14,7 +14,7 @@ async function consumeMessagesFromReturnQueue() {
     console.log('En attente de messages dans la queue', queue);
     channel.consume(queue, async (msg) => {
       if (msg !== null) {
-        const { userId, bookId, returnedAt } = JSON.parse(
+        const { userId, bookId, isAvailable, returnedAt } = JSON.parse(
           msg.content.toString()
         );
         console.log("Traitement du retour du livre pour l'utilisateur", userId);
@@ -27,7 +27,11 @@ async function consumeMessagesFromReturnQueue() {
           return;
         }
 
-        const borrowing = await updateBorrowing(bookId, returnedAt);
+        const borrowing = await updateBorrowing(
+          bookId,
+          isAvailable,
+          returnedAt
+        );
         if (borrowing) {
           console.log('Retour effectué avec succès:', borrowing);
         } else {

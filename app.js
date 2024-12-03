@@ -8,7 +8,7 @@ const cors = require('cors');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3002;
 
 // Initialisation de la base de données
 sequelize
