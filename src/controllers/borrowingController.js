@@ -35,6 +35,28 @@ async function getBorrowing(req, res) {
   }
 }
 
+async function getBorrowingById(req, res) {
+  try {
+    const borrowing = await Borrowing.findOne({
+      where: { id: req.params.id },
+    });
+
+    if (!borrowing) {
+      res.status(404).json({ error: 'Emprunt non trouvé.' });
+      return;
+    }
+
+    res.status(200).json({ status: 200, borrowing: borrowing });
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération de l'emprunt:",
+      error.message
+    );
+
+    res.status(500).json({ error: "Impossible de récupérer l'emprunt." });
+  }
+}
+
 async function updateBorrowing(bookId, isAvailable, returnedAt = null) {
   try {
     // Recherche de l'emprunt par son ID
@@ -72,4 +94,9 @@ async function updateBorrowing(bookId, isAvailable, returnedAt = null) {
   }
 }
 
-module.exports = { createBorrowing, updateBorrowing, getBorrowing };
+module.exports = {
+  createBorrowing,
+  updateBorrowing,
+  getBorrowing,
+  getBorrowingById,
+};

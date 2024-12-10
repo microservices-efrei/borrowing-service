@@ -2,6 +2,8 @@ const express = require('express');
 const sequelize = require('./src/config/database');
 const dotenv = require('dotenv');
 const indexRoutes = require('./src/routes/index');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./src/config/swagger');
 const { startListening } = require('./src/services/listeningService');
 const cors = require('cors');
 
@@ -26,6 +28,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use('/api', indexRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use(cors());
 
 startListening();
